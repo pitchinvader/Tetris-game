@@ -1,0 +1,212 @@
+import random
+import time
+import os
+
+# Constants
+BOARD_WIDTH = 10
+BOARD_HEIGHT = 20
+
+# Tetromino shapes
+TETROMINOS = {
+    'I': [['.....',
+           '.....',
+           '..X..',
+           '..X..',
+           '..X..',
+           '..X..',
+           '.....']],
+    
+    'J': [['.....',
+           '.....',
+           '.X...',
+           '.XXX.',
+           '.....'],
+          ['.....',
+           '..XX.',
+           '..X..',
+           '..X..',
+           '.....'],
+          ['.....',
+           '.....',
+           '.XXX.',
+           '...X.',
+           '.....'],
+          ['.....',
+           '..X..',
+           '..X..',
+           '.XX..',
+           '.....']],
+    
+    'L': [['.....',
+           '.....',
+           '...X.',
+           '.XXX.',
+           '.....'],
+          ['.....',
+           '..X..',
+           '..X..',
+           '..XX.',
+           '.....'],
+          ['.....',
+           '.....',
+           '.XXX.',
+           '.X...',
+           '.....'],
+          ['.....',
+           '.XX..',
+           '..X..',
+           '..X..',
+           '.....']],
+    
+    'O': [['.....',
+           '.....',
+           '..XX.',
+           '..XX.',
+           '.....']],
+    
+    'S': [['.....',
+           '.....',
+           '..XX.',
+           '.XX..',
+           '.....'],
+          ['.....',
+           '..X..',
+           '..XX.',
+           '...X.',
+           '.....']],
+    
+    'T': [['.....',
+           '.....',
+           '..X..',
+           '.XXX.',
+           '.....'],
+          ['.....',
+           '..X..',
+           '..XX.',
+           '..X..',
+           '.....'],
+          ['.....',
+           '.....',
+           '.XXX.',
+           '..X..',
+           '.....'],
+          ['.....',
+           '..X..',
+           '.XX..',
+           '..X..',
+           '.....']],
+    
+    'Z': [['.....',
+           '.....',
+           '.XX..',
+           '..XX.',
+           '.....'],
+          ['.....',
+           '..X..',
+           '.XX..',
+           '.X...',
+           '.....']]
+}
+
+# Board initialization
+def create_board():
+    return [['.' for _ in range(BOARD_WIDTH)] for _ in range(BOARD_HEIGHT)]
+
+def print_board(board):
+    os.system('cls' if os.name == 'nt' else 'clear')
+    for row in board:
+        print(''.join(row))
+    print()
+
+# Testing board creation and printing
+board = create_board()
+print_board(board)
+
+def rotate_piece(piece, rotation):
+    return TETROMINOS[piece][rotation % len(TETROMINOS[piece])]
+
+def is_valid_position(board, piece, offset, rotation):
+    shape = rotate_piece(piece, rotation)
+    offset_x, offset_y = offset
+    for y, row in enumerate(shape):
+        for x, cell in enumerate(row):
+            if cell == 'X':
+                if (x + offset_x < 0 or x + offset_x >= BOARD_WIDTH or
+                    y + offset_y < 0 or y + offset_y >= BOARD_HEIGHT or
+                    board[y + offset_y][x + offset_x] != '.'):
+                    return False
+    return True
+
+def place_piece(board, piece, offset, rotation):
+    shape = rotate_piece(piece, rotation)
+    offset_x, offset_y = offset
+    for y, row in enumerate(shape):
+        for x, cell in enumerate(row):
+            if cell == 'X':
+                board[y + offset_y][x + offset_x] = 'X'
+
+# Testing piece placement
+board = create_board()
+piece = 'T'
+rotation = 0
+offset = (3, 0)
+
+if is_valid_position(board, piece, offset, rotation):
+    place_piece(board, piece, offset, rotation)
+print_board(board)
+
+
+def clear_lines(board):
+    new_board = [row for row in board if any(cell == '.' for cell in row)]
+    lines_cleared = BOARD_HEIGHT - len(new_board)
+    new_board = [['.' for _ in range(BOARD_WIDTH)] for _ in range(lines_cleared)] + new_board
+    return new_board, lines_cleared
+
+# Testing line clearing
+board = create_board()
+for y in range(BOARD_HEIGHT - 2, BOARD_HEIGHT):
+    for x in range(BOARD_WIDTH):
+        board[y][x] = 'X'
+print_board(board)
+board, lines_cleared = clear_lines(board)
+print(f'Lines cleared: {lines_cleared}')
+print_board(board)
+
+
+def find_best_position(board, piece):
+    best_score = -1
+    best_position = (0, 0, 0)
+    for rotation in range(len(TETROMINOS[piece])):
+        for x in range(BOARD_WIDTH):
+            y = 0
+            while is_valid_position(board, piece, (x, y), rotation):
+                y += 1
+            y -= 1  # Move back to last valid position
+            if y >= 0:
+                temp_board = [row[:] for row in board]
+                place_piece(temp_board, piece, (x, y), rotation)
+                temp_board, _ = clear_lines(temp_board)
+                score = sum(row.count('X') for row in temp_board)
+                if score > best_score:
+                    best_score = score
+                    best_position = (x, y, rotation)
+    return best_position
+
+def play_tetris():
+    board = create_board()
+    pieces = list(TETROMINOS.keys())
+    while True:
+        piece = random.choice(pieces)
+        x, y, rotation = find_best_position(board, piece)
+        if not is_valid_position(board, piece, (x, y), rotation):
+            print("Game Over!")
+            break
+        place_piece(board, piece, (x, y), rotation)
+        board, _ = clear_lines(board)
+        print_board(board)
+        time.sleep(0.5)
+
+play_tetris()
+
+
+
